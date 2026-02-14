@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>A Journey For You</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+        html, body {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow: hidden;
+        }
+        body {
+            background: #0a0a0f;
+            font-family: 'Montserrat', sans-serif;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+        }
+        #main-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+        #main-canvas.interactive {
+            touch-action: none;
+            z-index: 5;
+        }
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+            padding: 20px;
+        }
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .intro-heart-container {
+            perspective: 1000px;
+            margin-bottom: 30px;
+        }
+        .intro-heart {
+            width: 120px; height: 120px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: heartRotate 4s ease-in-out infinite;
+        }
+        .intro-heart::before,
+        .intro-heart::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 60px; height: 96px;
+            background: linear-gradient(135deg, #339af0, #74c0fc, #339af0);
+            border-radius: 60px 60px 0 0;
+            box-shadow:
+                0 0 40px rgba(51,154,240,0.8),
+                0 0 80px rgba(51,154,240,0.4),
+                inset 0 0 20px rgba(255,255,255,0.2);
+        }
+        .intro-heart::before {
+            left: 60px;
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+        }
+        .intro-heart::after {
+            left: 0;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+        }
+        @keyframes heartRotate {
+            0%, 100% { transform: rotateY(0deg) scale(1); }
+            25% { transform: rotateY(15deg) scale(1.05); }
+            50% { transform: rotateY(0deg) scale(1.1); }
+            75% { transform: rotateY(-15deg) scale(1.05); }
+        }
+        .intro-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3em;
+            color: transparent;
+            background: linear-gradient(90deg, #74c0fc, #fff, #74c0fc);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shimmer 3s linear infinite;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+        .intro-subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9em;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        .btn {
+            display: block;
+            padding: 18px 45px;
+            font-family: 'Cinzel', serif;
+            font-size: 1em;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #fff;
+            background: linear-gradient(135deg, rgba(51,154,240,0.4), rgba(25,113,194,0.3));
+            border: 2px solid rgba(51,154,240,0.7);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            z-index: 999;
+            min-height: 56px;
+            min-width: 200px;
+        }
+        .btn:hover, .btn:active, .btn:focus {
+            border-color: #74c0fc;
+            box-shadow: 0 0 50px rgba(51,154,240,0.7), inset 0 0 50px rgba(51,154,240,0.25);
+            transform: scale(1.05);
+            background: linear-gradient(135deg, rgba(51,154,240,0.6), rgba(25,113,194,0.4));
+        }
+        .btn.pressed {
+            transform: scale(0.95);
+            box-shadow: 0 0 60px rgba(51,154,240,0.9), inset 0 0 60px rgba(51,154,240,0.3);
+        }
+        .game-ui {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 50;
+            background: linear-gradient(180deg, rgba(10,10,15,0.95) 0%, rgba(10,10,15,0.7) 70%, transparent 100%);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            pointer-events: none;
+            gap: 15px;
+        }
+        .game-ui.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .love-meter {
+            flex: 1;
+            max-width: 200px;
+            min-width: 120px;
+        }
+        .love-meter-label {
+            font-family: 'Cinzel', serif;
+            color: rgba(255,255,255,0.9);
+            font-size: 0.7em;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .love-meter-bar {
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 7px;
+            overflow: hidden;
+            border: 2px solid rgba(51,154,240,0.4);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .love-meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #1971c2, #339af0, #74c0fc);
+            border-radius: 7px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 15px rgba(51,154,240,0.8), 0 0 30px rgba(51,154,240,0.4);
+        }
+        .score-display {
+            font-family: 'Cinzel', serif;
+            color: #fff;
+            font-size: 1em;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(51,154,240,0.6);
+            white-space: nowrap;
+        }
+        .combo-display {
+            position: fixed;
+            top: 40%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Great Vibes', cursive;
+            font-size: 3em;
+            color: #74c0fc;
+            text-shadow: 0 0 30px rgba(51,154,240,0.9), 0 0 60px rgba(51,154,240,0.5);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 60;
+            text-align: center;
+            width: 90%;
+        }
+        .combo-display.show {
+            animation: comboPopup 1.2s ease-out forwards;
+        }
+        @keyframes comboPopup {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-10deg); }
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
+            50% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: translate(-50%, -70%) scale(0.8); }
+        }
+        .game-instructions {
+            position: fixed;
+            bottom: 15px; left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Montserrat', sans-serif;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            z-index: 60;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            pointer-events: none;
+            text-align: center;
+            width: 90%;
+        }
+        .game-instructions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* FINALE OVERLAY - scrollable */
+        #finale-overlay {
+            justify-content: flex-start;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .finale-content {
+            text-align: center;
+            max-width: 90%;
+            width: 100%;
+            padding: 30px 20px 40px 20px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 1.5s cubic-bezier(0.34,1.56,0.64,1);
+            margin: auto;
+        }
+        .finale-content.reveal {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .envelope-section {
+            padding-top: 70px;
+            position: relative;
+        }
+        .letter-envelope {
+            width: 260px; height: 190px;
+            margin: 0 auto 20px;
+            position: relative;
+            perspective: 1000px;
+        }
+        .envelope-back {
+            position: absolute;
+            width: 100%; height: 100%;
+            background: linear-gradient(145deg, #d4a574, #c4956a);
+            border-radius: 8px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+        .envelope-flap {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100px;
+            background: linear-gradient(180deg, #e5b684, #d4a574);
+            clip-path: polygon(0 0, 50% 100%, 100% 0);
+            transform-origin: top center;
+            transition: transform 1s ease;
+            z-index: 3;
+        }
+        .envelope-flap.open {
+            transform: rotateX(180deg);
+        }
+        .letter-paper {
+            position: absolute;
+            top: 15px; left: 15px;
+            width: calc(100% - 30px);
+            height: calc(100% - 25px);
+            background: linear-gradient(180deg, #fff9f0, #fff5e6);
+            border-radius: 4px;
+            padding: 20px 15px;
+            transform: translateY(0);
+            transition: transform 1s ease 0.8s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+        .letter-paper.rise {
+            transform: translateY(-65px);
+        }
+        .letter-paper-content {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.1em;
+            color: #4a3728;
+            line-height: 1.4;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease 1.5s;
+        }
+        .letter-paper-content.show {
+            opacity: 1;
+        }
+        .finale-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3em;
+            color: transparent;
+            background: linear-gradient(135deg, #74c0fc, #fff, #74c0fc);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: gradientFlow 4s ease infinite;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s ease;
+        }
+        .finale-title.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .finale-message {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 300;
+            font-size: 1em;
+            color: rgba(255,255,255,0.9);
+            line-height: 1.8;
+            max-width: 500px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s ease;
+        }
+        .finale-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .name-highlight {
+            color: #74c0fc;
+            font-weight: 600;
+        }
+        .doraemon-section {
+            margin-top: 30px;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        .doraemon-section.show {
+            opacity: 1;
+        }
+        .doraemon-section canvas {
+            width: 260px;
+            height: 310px;
+            display: block;
+            margin: 0 auto;
+        }
+        .screen-flash {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(51,154,240,0.4) 0%, rgba(51,154,240,0) 70%);
+            z-index: 40;
+            pointer-events: none;
+            opacity: 0;
+        }
+        .screen-flash.active {
+            animation: flashPulse 0.3s ease-out;
+        }
+        @keyframes flashPulse {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @media (max-width: 768px) {
+            .intro-heart { width: 100px; height: 100px; }
+            .intro-heart::before, .intro-heart::after { width: 50px; height: 80px; border-radius: 50px 50px 0 0; }
+            .intro-heart::before { left: 50px; }
+            .intro-title { font-size: 2.5em; }
+            .intro-subtitle { font-size: 0.8em; letter-spacing: 3px; }
+            .btn { padding: 16px 40px; font-size: 0.9em; }
+            .love-meter { max-width: 160px; }
+            .love-meter-label { font-size: 0.65em; }
+            .love-meter-bar { height: 12px; }
+            .score-display { font-size: 0.85em; }
+            .combo-display { font-size: 2.5em; }
+            .finale-title { font-size: 2.5em; }
+            .finale-message { font-size: 0.9em; line-height: 1.7; }
+        }
+        @media (max-width: 480px) {
+            .intro-heart-container { margin-bottom: 20px; }
+            .intro-heart { width: 80px; height: 80px; }
+            .intro-heart::before, .intro-heart::after {
+                width: 40px; height: 64px; border-radius: 40px 40px 0 0;
+                box-shadow: 0 0 30px rgba(51,154,240,0.8), 0 0 60px rgba(51,154,240,0.4);
+            }
+            .intro-heart::before { left: 40px; }
+            .intro-title { font-size: 2em; }
+            .intro-subtitle { font-size: 0.7em; letter-spacing: 2px; margin-bottom: 30px; }
+            .btn { padding: 14px 35px; font-size: 0.85em; letter-spacing: 2px; }
+            .game-ui { padding: 10px 12px; gap: 10px; }
+            .love-meter { max-width: 140px; min-width: 100px; }
+            .love-meter-label { font-size: 0.55em; letter-spacing: 1px; }
+            .love-meter-bar { height: 10px; border-radius: 5px; }
+            .love-meter-fill { border-radius: 5px; }
+            .score-display { font-size: 0.75em; letter-spacing: 1px; }
+            .combo-display { font-size: 2em; top: 35%; }
+            .game-instructions { font-size: 0.65em; bottom: 10px; }
+            .letter-envelope { width: 220px; height: 160px; margin-bottom: 15px; }
+            .envelope-flap { height: 85px; }
+            .envelope-section { padding-top: 55px; }
+            .letter-paper { padding: 15px 12px; }
+            .letter-paper.rise { transform: translateY(-50px); }
+            .letter-paper-content { font-size: 0.95em; }
+            .finale-title { font-size: 2em; margin-bottom: 15px; }
+            .finale-message { font-size: 0.85em; line-height: 1.6; }
+            .doraemon-section { margin-top: 20px; }
+            .doraemon-section canvas { width: 210px; height: 250px; }
+        }
+        @media (max-width: 360px) {
+            .intro-title { font-size: 1.7em; }
+            .intro-subtitle { font-size: 0.6em; }
+            .btn { padding: 12px 28px; font-size: 0.8em; }
+            .love-meter { max-width: 110px; }
+            .love-meter-label { font-size: 0.5em; }
+            .score-display { font-size: 0.65em; }
+            .game-instructions { display: none; }
+            .combo-display { font-size: 1.7em; }
+            .letter-envelope { width: 190px; height: 140px; }
+            .finale-title { font-size: 1.7em; }
+            .finale-message { font-size: 0.8em; }
+            .doraemon-section canvas { width: 180px; height: 215px; }
+        }
+        @media (max-height: 500px) and (orientation: landscape) {
+            .intro-heart-container { margin-bottom: 10px; }
+            .intro-heart { width: 60px; height: 60px; }
+            .intro-heart::before, .intro-heart::after { width: 30px; height: 48px; border-radius: 30px 30px 0 0; }
+            .intro-heart::before { left: 30px; }
+            .intro-title { font-size: 1.8em; margin-bottom: 10px; }
+            .intro-subtitle { margin-bottom: 15px; font-size: 0.6em; }
+            .btn { padding: 10px 25px; }
+            .game-instructions { display: none; }
+            .letter-envelope { width: 180px; height: 130px; margin-bottom: 10px; }
+            .envelope-section { padding-top: 40px; }
+            .finale-title { font-size: 1.8em; }
+            .finale-message { font-size: 0.75em; line-height: 1.5; }
+            .doraemon-section canvas { width: 160px; height: 190px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="main-canvas"></canvas>
+    <div class="screen-flash" id="screen-flash"></div>
+
+    <div class="overlay active" id="intro-overlay">
+        <div class="intro-heart-container">
+            <div class="intro-heart"></div>
+        </div>
+        <h1 class="intro-title">A Journey Awaits</h1>
+        <p class="intro-subtitle">Created especially for you</p>
+        <button class="btn" id="start-btn" type="button" onclick="handleButtonClick()">Begin Our Journey</button>
+    </div>
+
+    <div class="game-ui" id="game-ui">
+        <div class="love-meter">
+            <div class="love-meter-label">
+                <span>LOVE</span>
+                <span id="meter-percent">0%</span>
+            </div>
+            <div class="love-meter-bar">
+                <div class="love-meter-fill" id="meter-fill"></div>
+            </div>
+        </div>
+        <div class="score-display">
+            <span id="score">0</span> PTS
+        </div>
+    </div>
+    <div class="combo-display" id="combo"></div>
+    <p class="game-instructions" id="game-instructions">Catch hearts - Avoid broken ones</p>
+
+    <div class="overlay" id="finale-overlay">
+        <div class="finale-content" id="finale-content">
+            <div class="envelope-section">
+                <div class="letter-envelope">
+                    <div class="envelope-back"></div>
+                    <div class="letter-paper" id="letter-paper">
+                        <div class="letter-paper-content" id="letter-content">
+                            You won my heart...
+                        </div>
+                    </div>
+                    <div class="envelope-flap" id="envelope-flap"></div>
+                </div>
+            </div>
+            <h1 class="finale-title" id="finale-title">I Love You</h1>
+            <p class="finale-message" id="finale-message"></p>
+            <div class="doraemon-section" id="doraemon-section">
+                <canvas id="doraemon-canvas" width="300" height="360"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        //  CUSTOMIZE HERE
+        // =============================================
+        var VALENTINE_NAME = "Alagii";
+         var FINALE_MESSAGE =
+            'To my dearest <span class="name-highlight">' + VALENTINE_NAME + '</span>,<br><br>' +
+            'Unkooda irukara ella moments enaku happy dha di ' +
+            'solla pona unna paathale enaku happy dha di.<br><br>' +
+            'Lets create more moments together.<br><br>' +
+            'I love you lots di.<br><br>' +
+            'Thank you for being you. ' +
+            'Forever yours 💕 dii...';
+
+        // =============================================
+        //  CANVAS SETUP
+        // =============================================
+        var canvas = document.getElementById('main-canvas');
+        var ctx = canvas.getContext('2d');
+        var isMobile = window.innerWidth <= 768;
+        var isSmallMobile = window.innerWidth <= 480;
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            isMobile = window.innerWidth <= 768;
+            isSmallMobile = window.innerWidth <= 480;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // =============================================
+        //  GAME STATE
+        // =============================================
+        var currentScene = 'intro';
+        var mouseX = canvas.width / 2;
+        var mouseY = canvas.height / 2;
+        var gameStarted = false;
+        var score = 0, loveLevel = 0, combo = 0, difficulty = 1;
+        var hearts = [], particles = [], floatingTexts = [];
+        var spawnTimer = 0, basketGlow = 0, screenShake = 0;
+        var shakeX = 0, shakeY = 0;
+        var stars = [], nebulaClouds = [];
+        var fireworks = [], fireworksActive = false;
+
+        function getBasketWidth() {
+            if (isSmallMobile) return Math.min(120, canvas.width * 0.3);
+            if (isMobile) return Math.min(140, canvas.width * 0.25);
+            return 150;
+        }
+        function getBasketY() {
+            if (isSmallMobile) return canvas.height - 70;
+            if (isMobile) return canvas.height - 85;
+            return canvas.height - 100;
+        }
+        function getHeartSize() {
+            if (isSmallMobile) return Math.random() * 15 + 25;
+            if (isMobile) return Math.random() * 18 + 28;
+            return Math.random() * 20 + 35;
+        }
+        function getParticleCount(broken) {
+            if (isSmallMobile) return broken ? 6 : 12;
+            if (isMobile) return broken ? 8 : 18;
+            return broken ? 12 : 25;
+        }
+
+        // =============================================
+        //  INIT
+        // =============================================
+        function init() {
+            var sc = isSmallMobile ? 80 : (isMobile ? 120 : 200);
+            stars = [];
+            for (var i = 0; i < sc; i++) {
+                stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, size: Math.random()*2+0.5, twinkle: Math.random()*Math.PI*2, speed: Math.random()*0.03+0.01 });
+            }
+            var cc = isSmallMobile ? 3 : 5;
+            nebulaClouds = [];
+            for (var i = 0; i < cc; i++) {
+                nebulaClouds.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, radius: Math.random()*150+80, hue: Math.random()*60+200, alpha: Math.random()*0.08+0.03, drift: (Math.random()-0.5)*0.15 });
+            }
+        }
+
+        // =============================================
+        //  HEART
+        // =============================================
+        function createHeart() {
+            var m = isSmallMobile ? 40 : 75;
+            return { x: Math.random()*(canvas.width-m*2)+m, y: -60, size: getHeartSize(), speed: (Math.random()*1.5+1.5)*difficulty, wobble: Math.random()*Math.PI*2, wobbleSpeed: Math.random()*0.03+0.015, wobbleAmp: isSmallMobile?20:(isMobile?30:40), rotation: 0, rotSpeed: (Math.random()-0.5)*0.05, isBroken: Math.random()<Math.min(0.18,0.08*difficulty), glow: 0, glowDir: 1, baseX: 0 };
+        }
+        function initHeart(h) { h.baseX = h.x; return h; }
+        function updateHeart(h) {
+            h.y += h.speed; h.wobble += h.wobbleSpeed;
+            h.x = h.baseX + Math.sin(h.wobble)*h.wobbleAmp;
+            h.rotation += h.rotSpeed;
+            h.glow += 0.06*h.glowDir;
+            if (h.glow>1||h.glow<0) h.glowDir*=-1;
+            return h.y > canvas.height+80;
+        }
+        function drawHeartPath(c, s) {
+            c.beginPath();
+            c.moveTo(0, s*0.4);
+            c.bezierCurveTo(-s*0.1, s*0.25, -s, -s*0.2, -s, -s*0.5);
+            c.bezierCurveTo(-s, -s, -s*0.5, -s*1.1, 0, -s*0.7);
+            c.bezierCurveTo(s*0.5, -s*1.1, s, -s, s, -s*0.5);
+            c.bezierCurveTo(s, -s*0.2, s*0.1, s*0.25, 0, s*0.4);
+        }
+        function drawHeartShape(s, c1, c2) {
+            var g = ctx.createRadialGradient(0,-s*0.3,0,0,0,s*1.2);
+            g.addColorStop(0,c1); g.addColorStop(1,c2);
+            ctx.fillStyle = g;
+            drawHeartPath(ctx, s);
+            ctx.fill();
+        }
+        function drawHeart(h) {
+            ctx.save();
+            ctx.translate(h.x, h.y);
+            ctx.rotate(h.rotation);
+            var s = h.size;
+            if (h.isBroken) {
+                ctx.shadowColor = 'rgba(100,100,100,0.4)'; ctx.shadowBlur = 10;
+                drawHeartShape(s, '#4a4a4a', '#2a2a2a');
+                ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(0,-s*0.5); ctx.lineTo(-s*0.1,-s*0.2); ctx.lineTo(s*0.1,0); ctx.lineTo(-s*0.05,s*0.2); ctx.stroke();
+            } else {
+                var gs = 20+h.glow*15;
+                ctx.shadowColor = 'rgba(51,154,240,'+(0.5+h.glow*0.3)+')';
+                ctx.shadowBlur = gs;
+                drawHeartShape(s, '#4dabf7', '#1971c2');
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.45)';
+                ctx.beginPath(); ctx.ellipse(-s*0.3,-s*0.4,s*0.15,s*0.1,-0.6,0,Math.PI*2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // =============================================
+        //  PARTICLE
+        // =============================================
+        function createParticle(x,y,color) {
+            return { x:x,y:y,color:color, size:Math.random()*(isSmallMobile?6:10)+3, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12-4, gravity:0.3, life:1, decay:Math.random()*0.025+0.02, rot:Math.random()*Math.PI*2, rotSpeed:(Math.random()-0.5)*0.2 };
+        }
+        function updateParticle(p) { p.x+=p.vx;p.y+=p.vy;p.vy+=p.gravity;p.vx*=0.98;p.life-=p.decay;p.rot+=p.rotSpeed;return p.life<=0; }
+        function drawParticle(p) {
+            ctx.save(); ctx.globalAlpha=p.life; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+            var s=p.size*p.life; ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=6;
+            drawHeartPath(ctx,s); ctx.fill(); ctx.restore();
+        }
+
+        // =============================================
+        //  FLOATING TEXT
+        // =============================================
+        function createFloatingText(x,y,t,c){return{x:x,y:y,text:t,color:c,life:1,vy:-3,scale:0};}
+        function updateFloatingText(f){f.y+=f.vy;f.vy+=0.08;f.life-=0.03;f.scale=Math.min(1.1,f.scale+0.2);return f.life<=0;}
+        function drawFloatingText(f){
+            ctx.save();ctx.globalAlpha=Math.max(0,f.life);ctx.translate(f.x,f.y);ctx.scale(f.scale,f.scale);
+            var fs=isSmallMobile?22:(isMobile?26:32);
+            ctx.font='bold '+fs+'px Cinzel,serif';ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillStyle=f.color;ctx.shadowColor=f.color;ctx.shadowBlur=12;ctx.fillText(f.text,0,0);ctx.restore();
+        }
+
+        // =============================================
+        //  FIREWORK
+        // =============================================
+        function createFirework(){return{x:Math.random()*canvas.width,y:canvas.height+20,targetY:Math.random()*canvas.height*0.4+60,speed:Math.random()*4+5,sparks:[],exploded:false,hue:Math.random()*60+200};}
+        function updateFirework(f){
+            if(!f.exploded){f.y-=f.speed;f.x+=(Math.random()-0.5)*1.5;if(f.y<=f.targetY)explodeFirework(f);}
+            else{f.sparks=f.sparks.filter(function(s){s.x+=s.vx;s.y+=s.vy;s.vy+=0.06;s.life-=0.018;return s.life>0;});if(f.sparks.length===0)resetFirework(f);}
+        }
+        function resetFirework(f){f.x=Math.random()*canvas.width;f.y=canvas.height+20;f.targetY=Math.random()*canvas.height*0.4+60;f.speed=Math.random()*4+5;f.sparks=[];f.exploded=false;f.hue=Math.random()*60+200;}
+        function explodeFirework(f){
+            f.exploded=true;var n=isSmallMobile?40:60;
+            for(var i=0;i<n;i++){var a=(Math.PI*2/n)*i,sp=Math.random()*4+2;f.sparks.push({x:f.x,y:f.y,vx:Math.cos(a)*sp+(Math.random()-0.5),vy:Math.sin(a)*sp+(Math.random()-0.5),life:1,hue:f.hue+Math.random()*30-15});}
+        }
+        function drawFirework(f){
+            if(!f.exploded){ctx.beginPath();ctx.arc(f.x,f.y,3,0,Math.PI*2);ctx.fillStyle='hsl('+f.hue+',100%,70%)';ctx.shadowColor='hsl('+f.hue+',100%,60%)';ctx.shadowBlur=12;ctx.fill();}
+            else{f.sparks.forEach(function(s){ctx.beginPath();ctx.arc(s.x,s.y,2.5*s.life,0,Math.PI*2);ctx.fillStyle='hsla('+s.hue+',100%,'+(50+s.life*30)+'%,'+s.life+')';ctx.fill();});}ctx.shadowBlur=0;
+        }
+
+        // =============================================
+        //  DRAW BACKGROUND & BASKET
+        // =============================================
+        function drawBackground(){
+            var g=ctx.createRadialGradient(canvas.width/2,canvas.height/2,0,canvas.width/2,canvas.height/2,Math.max(canvas.width,canvas.height));
+            g.addColorStop(0,'#0a0e1a');g.addColorStop(0.5,'#070a12');g.addColorStop(1,'#03050a');
+            ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+            nebulaClouds.forEach(function(c){c.x+=c.drift;if(c.x<-c.radius)c.x=canvas.width+c.radius;if(c.x>canvas.width+c.radius)c.x=-c.radius;var ng=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.radius);ng.addColorStop(0,'hsla('+c.hue+',70%,50%,'+c.alpha+')');ng.addColorStop(1,'transparent');ctx.fillStyle=ng;ctx.fillRect(c.x-c.radius,c.y-c.radius,c.radius*2,c.radius*2);});
+            stars.forEach(function(s){s.twinkle+=s.speed;var a=0.3+Math.sin(s.twinkle)*0.4;ctx.beginPath();ctx.arc(s.x,s.y,s.size,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+a+')';ctx.fill();});
+        }
+        function drawBasket(){
+            var x=mouseX,y=getBasketY(),w=getBasketWidth(),h=isSmallMobile?55:(isMobile?65:80);
+            basketGlow+=0.05;var p=Math.sin(basketGlow)*0.3+0.7;
+            ctx.save();
+            ctx.beginPath();ctx.ellipse(x,y,w/2+15,20,0,0,Math.PI*2);
+            var rg=ctx.createRadialGradient(x,y,w/2-10,x,y,w/2+25);rg.addColorStop(0,'transparent');rg.addColorStop(0.5,'rgba(51,154,240,'+(0.25*p)+')');rg.addColorStop(1,'transparent');ctx.fillStyle=rg;ctx.fill();
+            ctx.shadowColor='rgba(51,154,240,'+(0.5*p)+')';ctx.shadowBlur=25*p;
+            var bg=ctx.createLinearGradient(x-w/2,y,x+w/2,y+h);bg.addColorStop(0,'rgba(51,154,240,'+(0.25*p)+')');bg.addColorStop(1,'rgba(25,113,194,0.08)');
+            ctx.fillStyle=bg;ctx.strokeStyle='rgba(51,154,240,'+(0.7*p)+')';ctx.lineWidth=isSmallMobile?2:3;
+            ctx.beginPath();ctx.moveTo(x-w/2,y);ctx.quadraticCurveTo(x-w/2+12,y+h*0.7,x-w/3,y+h);ctx.lineTo(x+w/3,y+h);ctx.quadraticCurveTo(x+w/2-12,y+h*0.7,x+w/2,y);ctx.closePath();ctx.fill();ctx.stroke();
+            ctx.beginPath();ctx.ellipse(x,y,w/2+6,isSmallMobile?10:12,0,0,Math.PI*2);
+            var rim=ctx.createLinearGradient(x-w/2,y-8,x+w/2,y+8);rim.addColorStop(0,'#74c0fc');rim.addColorStop(0.5,'#fff');rim.addColorStop(1,'#339af0');
+            ctx.strokeStyle=rim;ctx.lineWidth=isSmallMobile?4:5;ctx.stroke();
+            ctx.restore();
+            return{x:x,y:y,w:w,h:h};
+        }
+        function checkCollision(heart,basket){return(heart.y+heart.size*0.35>basket.y-15&&heart.y<basket.y+basket.h*0.5&&Math.abs(heart.x-basket.x)<basket.w/2+heart.size*0.25);}
+
+        // =============================================
+        //  UI
+        // =============================================
+        function updateUI(){document.getElementById('score').textContent=score;document.getElementById('meter-percent').textContent=Math.floor(loveLevel)+'%';document.getElementById('meter-fill').style.width=loveLevel+'%';}
+        function showCombo(t){var e=document.getElementById('combo');e.textContent=t;e.classList.remove('show');void e.offsetWidth;e.classList.add('show');}
+        function flashScreen(){var e=document.getElementById('screen-flash');e.classList.remove('active');void e.offsetWidth;e.classList.add('active');}
+        function spawnParticles(x,y,b){var c=b?'#666666':'#74c0fc';var n=getParticleCount(b);for(var i=0;i<n;i++)particles.push(createParticle(x,y,c));}
+
+        // =============================================
+        //  GAME LOOP
+        // =============================================
+        function gameLoop(){
+            if(screenShake>0){shakeX=(Math.random()-0.5)*screenShake;shakeY=(Math.random()-0.5)*screenShake;screenShake*=0.85;if(screenShake<0.5)screenShake=0;}else{shakeX=shakeY=0;}
+            ctx.save();ctx.translate(shakeX,shakeY);drawBackground();
+            if(currentScene==='game'){
+                spawnTimer++;var rate=isSmallMobile?Math.max(35,55-difficulty*8):Math.max(25,50-difficulty*10);
+                if(spawnTimer>=rate){var hh=createHeart();initHeart(hh);hearts.push(hh);spawnTimer=0;}
+                var basket=drawBasket();
+                hearts=hearts.filter(function(heart){
+                    var off=updateHeart(heart);
+                    if(checkCollision(heart,basket)){
+                        spawnParticles(heart.x,heart.y,heart.isBroken);
+                        if(heart.isBroken){score=Math.max(0,score-15);loveLevel=Math.max(0,loveLevel-5);combo=0;screenShake=10;showCombo('Ouch!');floatingTexts.push(createFloatingText(heart.x,heart.y-30,'-15','#888'));}
+                        else{combo++;var pts=10+combo*5;score+=pts;loveLevel=Math.min(100,loveLevel+3+combo*0.25);floatingTexts.push(createFloatingText(heart.x,heart.y-30,'+'+pts,'#74c0fc'));
+                        if(combo>=10){showCombo('LEGENDARY! x'+combo);flashScreen();}else if(combo>=7)showCombo('INCREDIBLE! x'+combo);else if(combo>=5)showCombo('AMAZING! x'+combo);else if(combo>=3)showCombo('GREAT! x'+combo);}
+                        updateUI();return false;
+                    }
+                    if(off){if(!heart.isBroken)combo=0;return false;}
+                    drawHeart(heart);return true;
+                });
+                difficulty=Math.min(2.2,1+score/300);
+                if(loveLevel>=100){currentScene='transition_finale';setTimeout(function(){currentScene='finale';document.getElementById('game-ui').classList.remove('active');document.getElementById('game-instructions').classList.remove('active');canvas.classList.remove('interactive');document.getElementById('finale-overlay').classList.add('active');startFinale();},800);}
+            }
+            particles=particles.filter(function(p){var d=updateParticle(p);if(!d)drawParticle(p);return!d;});
+            floatingTexts=floatingTexts.filter(function(f){var d=updateFloatingText(f);if(!d)drawFloatingText(f);return!d;});
+            if(fireworksActive){fireworks.forEach(function(f){updateFirework(f);drawFirework(f);});}
+            ctx.restore();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // =============================================
+        //  BUTTON
+        // =============================================
+        var startLock=false;
+        function handleButtonClick(){if(startLock)return;startLock=true;document.getElementById('start-btn').classList.add('pressed');startGame();}
+
+        // =============================================
+        //  TRANSITIONS
+        // =============================================
+        function startGame(){
+            currentScene='starting';
+            document.getElementById('intro-overlay').classList.remove('active');
+            setTimeout(function(){canvas.classList.add('interactive');currentScene='game';document.getElementById('game-ui').classList.add('active');document.getElementById('game-instructions').classList.add('active');score=0;loveLevel=0;combo=0;difficulty=1;hearts=[];particles=[];floatingTexts=[];spawnTimer=50;gameStarted=true;updateUI();},600);
+        }
+        function startFinale(){
+            document.getElementById('finale-message').innerHTML=FINALE_MESSAGE;
+            fireworksActive=true;fireworks=[];var fw=isSmallMobile?3:5;
+            for(var i=0;i<fw;i++){var f=createFirework();f.y=canvas.height+Math.random()*80;fireworks.push(f);}
+            setTimeout(function(){document.getElementById('finale-content').classList.add('reveal');},300);
+            setTimeout(function(){document.getElementById('envelope-flap').classList.add('open');},1000);
+            setTimeout(function(){document.getElementById('letter-paper').classList.add('rise');},1800);
+            setTimeout(function(){document.getElementById('letter-content').classList.add('show');},2600);
+            setTimeout(function(){document.getElementById('finale-title').classList.add('show');},3200);
+            setTimeout(function(){document.getElementById('finale-message').classList.add('show');},3700);
+            setTimeout(function(){document.getElementById('doraemon-section').classList.add('show');startDoraemonAnimation();},4200);
+        }
+
+        // =============================================
+        //  DORAEMON DRAWING
+        // =============================================
+        var doraTime = 0;
+        var doraBlinkTimer = 0;
+        var doraIsBlinking = false;
+        var doraSparkles = [];
+        var doraAnimRunning = false;
+
+        function drawSmallHeart(dc, x, y, s) {
+            dc.beginPath();
+            dc.moveTo(x, y + s * 0.35);
+            dc.bezierCurveTo(x - s*0.05, y + s*0.2, x - s, y - s*0.2, x - s, y - s*0.45);
+            dc.bezierCurveTo(x - s, y - s*0.9, x - s*0.5, y - s, x, y - s*0.6);
+            dc.bezierCurveTo(x + s*0.5, y - s, x + s, y - s*0.9, x + s, y - s*0.45);
+            dc.bezierCurveTo(x + s, y - s*0.2, x + s*0.05, y + s*0.2, x, y + s*0.35);
+            dc.fill();
+        }
+
+        function drawDoraemon(dc, cx, cy, sc, hp, blink) {
+            dc.save();
+            dc.translate(cx, cy);
+            dc.scale(sc, sc);
+
+            // Left arm (behind body) raised
+            dc.fillStyle = '#339af0';
+            dc.save(); dc.translate(-42, 48); dc.rotate(-1.0);
+            dc.beginPath(); dc.ellipse(0, -10, 13, 28, 0, 0, Math.PI*2); dc.fill();
+            dc.restore();
+            // Left hand
+            dc.fillStyle = '#fff';
+            dc.beginPath(); dc.arc(-65, 15, 12, 0, Math.PI*2); dc.fill();
+
+            // Heart held
+            var hs = 22 + hp * 6;
+            dc.save(); dc.translate(-65, -15);
+            dc.fillStyle = '#339af0';
+            dc.shadowColor = 'rgba(51,154,240,0.7)';
+            dc.shadowBlur = 15 + hp * 12;
+            drawSmallHeart(dc, 0, 0, hs);
+            dc.shadowBlur = 0;
+            // Shine on heart
+            dc.fillStyle = 'rgba(255,255,255,0.35)';
+            dc.beginPath(); dc.ellipse(-hs*0.3, -hs*0.35, hs*0.2, hs*0.12, -0.5, 0, Math.PI*2); dc.fill();
+            dc.restore();
+
+            // Right arm behind
+            dc.fillStyle = '#339af0';
+            dc.save(); dc.translate(42, 62); dc.rotate(0.3);
+            dc.beginPath(); dc.ellipse(0, 0, 13, 24, 0, 0, Math.PI*2); dc.fill();
+            dc.restore();
+            dc.fillStyle = '#fff';
+            dc.beginPath(); dc.arc(60, 88, 12, 0, Math.PI*2); dc.fill();
+
+            // Feet
+            dc.fillStyle = '#fff'; dc.strokeStyle = '#ddd'; dc.lineWidth = 1;
+            dc.beginPath(); dc.ellipse(-18, 128, 24, 10, 0, 0, Math.PI*2); dc.fill(); dc.stroke();
+            dc.beginPath(); dc.ellipse(18, 128, 24, 10, 0, 0, Math.PI*2); dc.fill(); dc.stroke();
+
+            // Body
+            dc.fillStyle = '#339af0';
+            dc.beginPath(); dc.ellipse(0, 78, 42, 48, 0, 0, Math.PI*2); dc.fill();
+            // Belly
+            dc.fillStyle = '#fff';
+            dc.beginPath(); dc.ellipse(0, 83, 28, 33, 0, 0, Math.PI*2); dc.fill();
+            // Pocket
+            dc.strokeStyle = '#ddd'; dc.lineWidth = 1.5;
+            dc.beginPath(); dc.moveTo(-18, 80); dc.lineTo(18, 80); dc.stroke();
+            dc.beginPath(); dc.arc(0, 80, 18, 0, Math.PI); dc.stroke();
+
+            // Collar
+            dc.fillStyle = '#e03131';
+            dc.beginPath(); dc.ellipse(0, 42, 44, 8, 0, 0, Math.PI*2); dc.fill();
+            // Bell
+            dc.fillStyle = '#ffd43b'; dc.strokeStyle = '#f08c00'; dc.lineWidth = 1.5;
+            dc.beginPath(); dc.arc(0, 52, 8, 0, Math.PI*2); dc.fill(); dc.stroke();
+            dc.fillStyle = '#f08c00';
+            dc.beginPath(); dc.arc(0, 51, 2, 0, Math.PI*2); dc.fill();
+            dc.beginPath(); dc.moveTo(0, 53); dc.lineTo(0, 58); dc.strokeStyle = '#f08c00'; dc.lineWidth = 1.5; dc.stroke();
+
+            // Head
+            dc.fillStyle = '#339af0';
+            dc.beginPath(); dc.arc(0, 0, 58, 0, Math.PI*2); dc.fill();
+            // Face white
+            dc.fillStyle = '#fff';
+            dc.beginPath(); dc.ellipse(0, 8, 46, 44, 0, 0, Math.PI*2); dc.fill();
+
+            // Eyes
+            if (blink) {
+                dc.strokeStyle = '#333'; dc.lineWidth = 3;
+                dc.beginPath(); dc.moveTo(-24, -14); dc.lineTo(-6, -14); dc.stroke();
+                dc.beginPath(); dc.moveTo(6, -14); dc.lineTo(24, -14); dc.stroke();
+            } else {
+                dc.fillStyle = '#fff'; dc.strokeStyle = '#333'; dc.lineWidth = 2;
+                dc.beginPath(); dc.ellipse(-14, -14, 14, 18, 0, 0, Math.PI*2); dc.fill(); dc.stroke();
+                dc.beginPath(); dc.ellipse(14, -14, 14, 18, 0, 0, Math.PI*2); dc.fill(); dc.stroke();
+                // Pupils
+                dc.fillStyle = '#333';
+                dc.beginPath(); dc.arc(-7, -10, 6, 0, Math.PI*2); dc.fill();
+                dc.beginPath(); dc.arc(7, -10, 6, 0, Math.PI*2); dc.fill();
+                // Highlights
+                dc.fillStyle = '#fff';
+                dc.beginPath(); dc.arc(-4, -14, 2.5, 0, Math.PI*2); dc.fill();
+                dc.beginPath(); dc.arc(10, -14, 2.5, 0, Math.PI*2); dc.fill();
+            }
+
+            // Nose
+            dc.fillStyle = '#e03131';
+            dc.beginPath(); dc.arc(0, 5, 6, 0, Math.PI*2); dc.fill();
+            dc.fillStyle = 'rgba(255,255,255,0.4)';
+            dc.beginPath(); dc.arc(-2, 3, 2.5, 0, Math.PI*2); dc.fill();
+
+            // Mouth
+            dc.strokeStyle = '#333'; dc.lineWidth = 2;
+            dc.beginPath(); dc.moveTo(0, 11); dc.lineTo(0, 32); dc.stroke();
+            dc.beginPath(); dc.arc(0, 11, 28, 0.15, Math.PI - 0.15); dc.stroke();
+
+            // Whiskers
+            dc.strokeStyle = '#333'; dc.lineWidth = 1.5;
+            dc.beginPath(); dc.moveTo(-24, 8); dc.lineTo(-55, 0); dc.stroke();
+            dc.beginPath(); dc.moveTo(-24, 16); dc.lineTo(-55, 16); dc.stroke();
+            dc.beginPath(); dc.moveTo(-24, 24); dc.lineTo(-55, 32); dc.stroke();
+            dc.beginPath(); dc.moveTo(24, 8); dc.lineTo(55, 0); dc.stroke();
+            dc.beginPath(); dc.moveTo(24, 16); dc.lineTo(55, 16); dc.stroke();
+            dc.beginPath(); dc.moveTo(24, 24); dc.lineTo(55, 32); dc.stroke();
+
+            dc.restore();
+        }
+
+        function startDoraemonAnimation() {
+            if (doraAnimRunning) return;
+            doraAnimRunning = true;
+            doraTime = 0;
+            doraBlinkTimer = 0;
+            animateDoraemon();
+        }
+
+        function animateDoraemon() {
+            if (!doraAnimRunning) return;
+            var dCan = document.getElementById('doraemon-canvas');
+            if (!dCan) return;
+            var dc = dCan.getContext('2d');
+            dc.clearRect(0, 0, dCan.width, dCan.height);
+
+            doraTime += 0.04;
+            doraBlinkTimer++;
+            if (doraBlinkTimer > 150 && !doraIsBlinking && Math.random() < 0.03) {
+                doraIsBlinking = true;
+                setTimeout(function() { doraIsBlinking = false; }, 150);
+                doraBlinkTimer = 0;
+            }
+
+            var bob = Math.sin(doraTime) * 4;
+            var hp = Math.sin(doraTime * 2) * 0.5 + 0.5;
+
+            // Sparkles around heart
+            if (Math.random() < 0.3) {
+                doraSparkles.push({
+                    x: 78 + (Math.random()-0.5)*40,
+                    y: 130 + bob + (Math.random()-0.5)*40,
+                    life: 1, size: Math.random()*3+1,
+                    vx: (Math.random()-0.5)*1.5,
+                    vy: (Math.random()-0.5)*1.5 - 0.5
+                });
+            }
+            doraSparkles = doraSparkles.filter(function(s) {
+                s.x += s.vx; s.y += s.vy; s.life -= 0.025;
+                if (s.life > 0) {
+                    dc.save();
+                    dc.globalAlpha = s.life;
+                    dc.fillStyle = '#74c0fc';
+                    dc.shadowColor = 'rgba(116,192,252,0.8)';
+                    dc.shadowBlur = 8;
+                    // Draw star shape
+                    dc.beginPath();
+                    var ss = s.size * s.life;
+                    for (var i = 0; i < 5; i++) {
+                        var a1 = (Math.PI * 2 / 5) * i - Math.PI / 2;
+                        var a2 = a1 + Math.PI / 5;
+                        if (i === 0) dc.moveTo(s.x + Math.cos(a1)*ss*2, s.y + Math.sin(a1)*ss*2);
+                        else dc.lineTo(s.x + Math.cos(a1)*ss*2, s.y + Math.sin(a1)*ss*2);
+                        dc.lineTo(s.x + Math.cos(a2)*ss, s.y + Math.sin(a2)*ss);
+                    }
+                    dc.closePath(); dc.fill();
+                    dc.restore();
+                }
+                return s.life > 0;
+            });
+
+            drawDoraemon(dc, 150, 155 + bob, 1.0, hp, doraIsBlinking);
+
+            requestAnimationFrame(animateDoraemon);
+        }
+
+        // =============================================
+        //  INPUT
+        // =============================================
+        function clampMouseX(x){var w=getBasketWidth();return Math.max(w/2+10,Math.min(canvas.width-w/2-10,x));}
+        document.addEventListener('mousemove',function(e){if(gameStarted){mouseX=clampMouseX(e.clientX);mouseY=e.clientY;}});
+        document.addEventListener('touchmove',function(e){if(gameStarted&&e.touches.length>0){e.preventDefault();mouseX=clampMouseX(e.touches[0].clientX);}},{passive:false});
+        document.addEventListener('touchstart',function(e){if(gameStarted&&e.touches.length>0){mouseX=clampMouseX(e.touches[0].clientX);}},{passive:true});
+
+        // =============================================
+        //  START
+        // =============================================
+        init();
+        gameLoop();
+    </script>
+</body>
+</html>
